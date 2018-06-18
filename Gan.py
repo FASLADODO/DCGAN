@@ -13,20 +13,20 @@ K.set_learning_phase(1)
 sess=tf.Session()
 K.set_session(sess)
 
+
 discriminator=Sequential()
-discriminator.add(Conv2D(filters=128,input_shape=(28,28,1),kernel_size=(3,3),strides=1,padding='same'))
+discriminator.add(Conv2D(filters=64,input_shape=(28,28,1),kernel_size=(3,3),strides=1,padding='same'))
 discriminator.add(BatchNormalization())
 discriminator.add(Activation('tanh'))
 discriminator.add(MaxPool2D())
 discriminator.add(Dropout(0.4))
 
-discriminator.add(Conv2D(filters=128,kernel_size=4,strides=1,padding='same'))
+discriminator.add(Conv2D(filters=64,kernel_size=4,strides=1,padding='same'))
 discriminator.add(Activation('tanh'))
 discriminator.add(BatchNormalization())
 discriminator.add(MaxPool2D())
 discriminator.add(Dropout(0.6))
-
-discriminator.add(Conv2D(filters=256,kernel_size=3,strides=1,padding='valid',activation='relu'))
+discriminator.add(Conv2D(filters=96,kernel_size=3,strides=1,padding='valid',activation='relu'))
 discriminator.add(MaxPool2D())
 discriminator.add(Flatten())
 
@@ -35,8 +35,6 @@ discriminator.add(Dropout(0.3))
 discriminator.add(Dense(100,activation='relu'))
 
 discriminator.add(Dense(1,activation='sigmoid'))
-
-
 
 generator=Sequential()
 
@@ -53,8 +51,14 @@ generator.add(Conv2D(filters=128,kernel_size=(3,3),strides=1,padding='same'))
 generator.add(BatchNormalization())
 generator.add(Activation('tanh'))
 
+generator.add(Conv2D(filters=256,kernel_size=(3,3),strides=1,padding='same'))
+generator.add(BatchNormalization())
+generator.add(Activation('tanh'))
+
+
 generator.add(Conv2D(filters=1,kernel_size=3,strides=1,padding='same'))
 
+data=input_data.read_data_sets('../input/mnist/mnist/',one_hot=True)
 
 noise=K.placeholder(shape=(None,100),dtype=K.floatx())
 images=K.placeholder(shape=(None,28,28,1),dtype=K.floatx())
@@ -69,8 +73,8 @@ disc_real_loss=tf.reduce_mean(binary_crossentropy(y_pred=discriminator(images),y
 disc_loss=disc_fake_loss+disc_real_loss
 
 
-trainD=tf.train.AdamOptimizer(0.0001).minimize(disc_loss)
-trainG=tf.train.AdamOptimizer(0.0002).minimize(gen_loss)
+trainD=tf.train.AdamOptimizer(0.00001).minimize(disc_loss)
+trainG=tf.train.AdamOptimizer(0.00004).minimize(gen_loss)
 
 
 init=tf.global_variables_initializer()
@@ -80,7 +84,7 @@ batch_size=32
 iterations=data.train.num_examples//batch_size
 
 
-for i in range(iterations):
+for i in range(iterations//5):
 
 	discriminator.trainable=True 
 	generator.trainable=False
@@ -92,16 +96,12 @@ for i in range(iterations):
 	feed_dict={noise:noise_vector,images:image_batch} 
 
 
-	for _ in range(10):
+	for _ in range(4):
 		sess.run(trainD,feed_dict=feed_dict)
-		print('Discriminator loss ={}'.format(sess.run(disc_loss,feed_dict=feed_dict)))
+	print('Discriminator loss ={}'.format(sess.run(disc_loss,feed_dict=feed_dict)))
 	
 	discriminator.trainable=False 
 	generator.trainable=True
 	sess.run(trainG,feed_dict=feed_dict)
 	print('Generator loss = {}'.format(sess.run(gen_loss,feed_dict=feed_dict)))
-
-
-
-
 
